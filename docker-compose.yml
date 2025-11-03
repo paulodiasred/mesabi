@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: comidasmart-postgres
+    environment:
+      POSTGRES_USER: comidasmart
+      POSTGRES_PASSWORD: comidasmart_pass_2025
+      POSTGRES_DB: comidasmart_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U comidasmart -d comidasmart_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - comidasmart
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: comidasmart-backend
+    environment:
+      DATABASE_URL: postgresql://comidasmart:comidasmart_pass_2025@postgres:5432/comidasmart_db?schema=public
+      PORT: 3001
+      NODE_ENV: production
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - comidasmart
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: comidasmart-frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3001/api/v1
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - comidasmart
+    restart: unless-stopped
+
+  data-generator:
+    build:
+      context: .
+      dockerfile: Dockerfile.data-generator
+    container_name: comidasmart-data-generator
+    environment:
+      POSTGRES_USER: comidasmart
+      POSTGRES_PASSWORD: comidasmart_pass_2025
+      POSTGRES_DB: comidasmart_db
+      DATABASE_URL: postgresql://comidasmart:comidasmart_pass_2025@postgres:5432/comidasmart_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - comidasmart
+    profiles:
+      - tools
+
+volumes:
+  postgres_data:
+
+networks:
+  comidasmart:
+    driver: bridge
+
