@@ -22,7 +22,7 @@ services:
   data-generator:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.data-generator
     container_name: godlevel-data-gen
     depends_on:
       postgres:

@@ -103,11 +103,12 @@ npx prisma studio
 
 #### 3. Deploy Backend
 1. No projeto, clique em "New" → "GitHub Repo" (selecione o mesmo repo)
-2. Nas configurações do serviço:
-   - **Root Directory**: `mesabi/backend`
+2. **IMPORTANTE**: Nas configurações do serviço:
+   - **Root Directory**: `mesabi/backend` ⚠️ **CRÍTICO**: Deve ser exatamente isso
    - **Build Command**: `npm ci && npm run build && npx prisma generate`
    - **Start Command**: `npm run start:prod`
    - **Port**: Railway detecta automaticamente (pode deixar vazio)
+   - **Dockerfile**: Railway deve usar `mesabi/backend/Dockerfile` OU usar Nixpacks (desmarque "Use Dockerfile" se houver problema)
 3. **Variáveis de Ambiente** (Settings → Variables):
    ```env
    DATABASE_URL=${{Postgres.DATABASE_URL}}
@@ -129,17 +130,22 @@ npx prisma studio
    ```
 
 #### 5. Deploy Frontend
-1. No projeto, clique em "New" → "GitHub Repo" (mesmo repo)
-2. Nas configurações:
-   - **Root Directory**: `mesabi/frontend`
-   - **Build Command**: `npm ci && npm run build`
-   - **Start Command**: `npm start`
-3. **Variáveis de Ambiente**:
+1. No projeto, clique em "New" → "GitHub Repo" (selecione o mesmo repo)
+2. **IMPORTANTE**: Nas configurações do serviço:
+   - **Root Directory**: `mesabi/frontend` ⚠️ **CRÍTICO**: Deve ser exatamente isso
+   - **Build Command**: `npm ci && npm run build` (ou deixe vazio, Railway detecta automaticamente)
+   - **Start Command**: `npm start` (ou deixe vazio)
+   - **Dockerfile Path**: Se Railway detectar Dockerfile, verifique se está usando `mesabi/frontend/Dockerfile` (não o da raiz!)
+3. **Variáveis de Ambiente** (Settings → Variables):
    ```env
    NEXT_PUBLIC_API_URL=https://<backend-url>.railway.app/api/v1
    NODE_ENV=production
    ```
 4. **Domínios**: Em Settings → Domains, Railway gerará um domínio HTTPS automático
+
+**⚠️ Problema Comum**: Se Railway detectar o Dockerfile da raiz (Python), force o uso do Nixpacks:
+   - Em Settings → Build, desmarque "Use Dockerfile"
+   - Ou renomeie o Dockerfile da raiz para `Dockerfile.data-generator` (já feito)
 
 #### 6. Gerar Dados (Opcional)
 ```bash
