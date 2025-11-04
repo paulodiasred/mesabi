@@ -8,6 +8,7 @@ import { QueryModule } from './modules/query/query.module';
 import { SemanticModule } from './modules/semantic/semantic.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { CacheInterceptor } from './common/interceptors/cache.interceptor';
+import { AppController } from './app.controller';
 import configuration from './config/configuration';
 
 @Module({
@@ -31,6 +32,7 @@ import configuration from './config/configuration';
     SemanticModule,
     DashboardModule,
   ],
+  controllers: [AppController],
   providers: [
     {
       provide: APP_INTERCEPTOR,
