@@ -1,0 +1,24 @@
+================================================================================
+AÇÃO URGENTE NO RAILWAY DASHBOARD - SEM ISSO O DEPLOY NÃO FUNCIONA
+================================================================================
+
+Para o FRONTEND:
+1. Railway Dashboard → comidasmart-frontend → Settings
+2. Procure "Root Directory" ou "Working Directory"
+3. Configure: mesabi/frontend
+4. Build Command: npm ci && npm run build (SEM "cd frontend &&")
+5. Desmarque "Use Dockerfile"
+6. Salve e redeploy
+
+Para o BACKEND:
+1. Railway Dashboard → comidasmart-backend → Settings
+2. Procure "Root Directory" ou "Working Directory"
+3. Configure: mesabi/backend
+4. Build Command: npm ci && npx prisma generate && npm run build (SEM "cd backend &&")
+5. Desmarque "Use Dockerfile"
+6. Salve e redeploy
+
+SEM CONFIGURAR O ROOT DIRECTORY, O DEPLOY SEMPRE FALHARÁ!
+
+================================================================================
+

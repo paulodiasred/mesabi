@@ -103,20 +103,24 @@ npx prisma studio
 
 #### 3. Deploy Backend
 1. No projeto, clique em "New" → "GitHub Repo" (selecione o mesmo repo)
-2. **IMPORTANTE**: Nas configurações do serviço:
-   - **Root Directory**: `mesabi/backend` ⚠️ **CRÍTICO**: Deve ser exatamente isso
-   - **Build Command**: `npm ci && npm run build && npx prisma generate`
-   - **Start Command**: `npm run start:prod`
-   - **Port**: Railway detecta automaticamente (pode deixar vazio)
-   - **Dockerfile**: Railway deve usar `mesabi/backend/Dockerfile` OU usar Nixpacks (desmarque "Use Dockerfile" se houver problema)
-3. **Variáveis de Ambiente** (Settings → Variables):
+2. **⚠️ CRÍTICO - Root Directory**:
+   - Vá em **Settings** → **Source** (ou **Build**)
+   - Encontre **"Root Directory"** ou **"Working Directory"**
+   - Configure: `mesabi/backend` (exatamente isso, sem espaços)
+   - **SEM isso, o deploy FALHARÁ!**
+3. **Build Settings**:
+   - **Builder**: Nixpacks (recomendado)
+   - **Build Command**: Deixe vazio (o `railway.json` já tem) OU use `npm ci && npx prisma generate && npm run build`
+   - Desmarque "Use Dockerfile" se estiver marcado
+4. **Start Command**: `npm run start:prod`
+5. **Variáveis de Ambiente** (Settings → Variables):
    ```env
    DATABASE_URL=${{Postgres.DATABASE_URL}}
    PORT=3001
    NODE_ENV=production
    FRONTEND_URL=https://<seu-frontend-url>.railway.app
    ```
-4. **Deploy**: Railway fará deploy automático após o push
+6. **Salve tudo** e faça redeploy
 
 #### 4. Executar Migrations (Primeira vez)
 1. No serviço do backend, clique em "Deployments"
@@ -131,21 +135,23 @@ npx prisma studio
 
 #### 5. Deploy Frontend
 1. No projeto, clique em "New" → "GitHub Repo" (selecione o mesmo repo)
-2. **IMPORTANTE**: Nas configurações do serviço:
-   - **Root Directory**: `mesabi/frontend` ⚠️ **CRÍTICO**: Deve ser exatamente isso
-   - **Build Command**: `npm ci && npm run build` (ou deixe vazio, Railway detecta automaticamente)
-   - **Start Command**: `npm start` (ou deixe vazio)
-   - **Dockerfile Path**: Se Railway detectar Dockerfile, verifique se está usando `mesabi/frontend/Dockerfile` (não o da raiz!)
-3. **Variáveis de Ambiente** (Settings → Variables):
+2. **⚠️ CRÍTICO - Root Directory**:
+   - Vá em **Settings** → **Source** (ou **Build**)
+   - Encontre **"Root Directory"** ou **"Working Directory"**
+   - Configure: `mesabi/frontend` (exatamente isso, sem espaços)
+   - **SEM isso, o deploy FALHARÁ com erro "npm not found"!**
+3. **Build Settings**:
+   - **Builder**: Nixpacks (recomendado)
+   - **Build Command**: Deixe vazio (o `railway.json` já tem) OU use `npm ci && npm run build`
+   - Desmarque "Use Dockerfile" se estiver marcado
+4. **Start Command**: `npm start`
+5. **Variáveis de Ambiente**:
    ```env
    NEXT_PUBLIC_API_URL=https://<backend-url>.railway.app/api/v1
    NODE_ENV=production
    ```
-4. **Domínios**: Em Settings → Domains, Railway gerará um domínio HTTPS automático
-
-**⚠️ Problema Comum**: Se Railway detectar o Dockerfile da raiz (Python), force o uso do Nixpacks:
-   - Em Settings → Build, desmarque "Use Dockerfile"
-   - Ou renomeie o Dockerfile da raiz para `Dockerfile.data-generator` (já feito)
+6. **Salve tudo** e faça redeploy
+7. **Domínios**: Em Settings → Domains, Railway gerará um domínio HTTPS automático
 
 #### 6. Gerar Dados (Opcional)
 ```bash
