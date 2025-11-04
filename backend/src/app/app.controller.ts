@@ -16,9 +16,12 @@ export class AppController {
   @Get('health')
   @ApiOperation({ summary: 'Health check endpoint' })
   getHealth() {
+    // Endpoint simples que não depende de banco
+    // Responde imediatamente para o Railway
     return {
       status: 'ok',
       timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
     };
   }
 }

@@ -1,5 +1,8 @@
 # Railway ignore - arquivos que não devem ser enviados
 Dockerfile.data-generator
+Dockerfile.backup
+frontend/Dockerfile
+frontend/Dockerfile.backup
 docker-compose.yml
 generate_data.py
 requirements.txt
