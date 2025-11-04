@@ -1,21 +1,17 @@
--- ComidaSmart Database Schema
--- This is the source SQL schema that the Prisma schema is based on
--- Used for reference and manual database setup
-
-CREATE TABLE IF NOT EXISTS brands (
+CREATE TABLE brands (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS sub_brands (
+CREATE TABLE sub_brands (
     id SERIAL PRIMARY KEY,
     brand_id INTEGER REFERENCES brands(id),
     name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS stores (
+CREATE TABLE stores (
     id SERIAL PRIMARY KEY,
     brand_id INTEGER REFERENCES brands(id),
     sub_brand_id INTEGER REFERENCES sub_brands(id),
@@ -35,7 +31,7 @@ CREATE TABLE IF NOT EXISTS stores (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS channels (
+CREATE TABLE channels (
     id SERIAL PRIMARY KEY,
     brand_id INTEGER REFERENCES brands(id),
     name VARCHAR(100) NOT NULL,
@@ -44,7 +40,7 @@ CREATE TABLE IF NOT EXISTS channels (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS categories (
+CREATE TABLE categories (
     id SERIAL PRIMARY KEY,
     brand_id INTEGER REFERENCES brands(id),
     sub_brand_id INTEGER REFERENCES sub_brands(id),
@@ -54,7 +50,7 @@ CREATE TABLE IF NOT EXISTS categories (
     deleted_at TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS products (
+CREATE TABLE products (
     id SERIAL PRIMARY KEY,
     brand_id INTEGER REFERENCES brands(id),
     sub_brand_id INTEGER REFERENCES sub_brands(id),
@@ -64,7 +60,7 @@ CREATE TABLE IF NOT EXISTS products (
     deleted_at TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS option_groups (
+CREATE TABLE option_groups (
     id SERIAL PRIMARY KEY,
     brand_id INTEGER REFERENCES brands(id),
     sub_brand_id INTEGER REFERENCES sub_brands(id),
@@ -74,7 +70,7 @@ CREATE TABLE IF NOT EXISTS option_groups (
     deleted_at TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS items (
+CREATE TABLE items (
     id SERIAL PRIMARY KEY,
     brand_id INTEGER REFERENCES brands(id),
     sub_brand_id INTEGER REFERENCES sub_brands(id),
@@ -84,7 +80,7 @@ CREATE TABLE IF NOT EXISTS items (
     deleted_at TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS customers (
+CREATE TABLE customers (
     id SERIAL PRIMARY KEY,
     customer_name VARCHAR(100),
     email VARCHAR(100),
@@ -101,7 +97,7 @@ CREATE TABLE IF NOT EXISTS customers (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS sales (
+CREATE TABLE sales (
     id SERIAL PRIMARY KEY,
     store_id INTEGER NOT NULL REFERENCES stores(id),
     sub_brand_id INTEGER REFERENCES sub_brands(id),
@@ -134,7 +130,7 @@ CREATE TABLE IF NOT EXISTS sales (
     origin VARCHAR(100) DEFAULT 'POS'
 );
 
-CREATE TABLE IF NOT EXISTS product_sales (
+CREATE TABLE product_sales (
     id SERIAL PRIMARY KEY,
     sale_id INTEGER NOT NULL REFERENCES sales(id) ON DELETE CASCADE,
     product_id INTEGER NOT NULL REFERENCES products(id),
@@ -144,7 +140,8 @@ CREATE TABLE IF NOT EXISTS product_sales (
     observations VARCHAR(300)
 );
 
-CREATE TABLE IF NOT EXISTS item_product_sales (
+-- Items added to products (e.g., "Hamburguer + Bacon + Queijo extra")
+CREATE TABLE item_product_sales (
     id SERIAL PRIMARY KEY,
     product_sale_id INTEGER NOT NULL REFERENCES product_sales(id) ON DELETE CASCADE,
     item_id INTEGER NOT NULL REFERENCES items(id),
@@ -156,7 +153,8 @@ CREATE TABLE IF NOT EXISTS item_product_sales (
     observations VARCHAR(300)
 );
 
-CREATE TABLE IF NOT EXISTS item_item_product_sales (
+-- Items added to items (nested customization)
+CREATE TABLE item_item_product_sales (
     id SERIAL PRIMARY KEY,
     item_product_sale_id INTEGER NOT NULL REFERENCES item_product_sales(id) ON DELETE CASCADE,
     item_id INTEGER NOT NULL REFERENCES items(id),
@@ -167,7 +165,7 @@ CREATE TABLE IF NOT EXISTS item_item_product_sales (
     amount FLOAT DEFAULT 1
 );
 
-CREATE TABLE IF NOT EXISTS delivery_sales (
+CREATE TABLE delivery_sales (
     id SERIAL PRIMARY KEY,
     sale_id INTEGER NOT NULL REFERENCES sales(id) ON DELETE CASCADE,
     courier_id VARCHAR(100),
@@ -183,7 +181,7 @@ CREATE TABLE IF NOT EXISTS delivery_sales (
     mode VARCHAR(100)
 );
 
-CREATE TABLE IF NOT EXISTS delivery_addresses (
+CREATE TABLE delivery_addresses (
     id SERIAL PRIMARY KEY,
     sale_id INTEGER NOT NULL REFERENCES sales(id) ON DELETE CASCADE,
     delivery_sale_id INTEGER REFERENCES delivery_sales(id) ON DELETE CASCADE,
@@ -201,13 +199,13 @@ CREATE TABLE IF NOT EXISTS delivery_addresses (
     longitude FLOAT
 );
 
-CREATE TABLE IF NOT EXISTS payment_types (
+CREATE TABLE payment_types (
     id SERIAL PRIMARY KEY,
     brand_id INTEGER REFERENCES brands(id),
     description VARCHAR(100) NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS payments (
+CREATE TABLE payments (
     id SERIAL PRIMARY KEY,
     sale_id INTEGER NOT NULL REFERENCES sales(id) ON DELETE CASCADE,
     payment_type_id INTEGER REFERENCES payment_types(id),
@@ -217,7 +215,7 @@ CREATE TABLE IF NOT EXISTS payments (
     currency VARCHAR(10) DEFAULT 'BRL'
 );
 
-CREATE TABLE IF NOT EXISTS coupons (
+CREATE TABLE coupons (
     id SERIAL PRIMARY KEY,
     brand_id INTEGER REFERENCES brands(id),
     code VARCHAR(50) NOT NULL,
@@ -228,7 +226,7 @@ CREATE TABLE IF NOT EXISTS coupons (
     valid_until TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS coupon_sales (
+CREATE TABLE coupon_sales (
     id SERIAL PRIMARY KEY,
     sale_id INTEGER REFERENCES sales(id) ON DELETE CASCADE,
     coupon_id INTEGER REFERENCES coupons(id),
@@ -236,14 +234,3 @@ CREATE TABLE IF NOT EXISTS coupon_sales (
     target VARCHAR(100),
     sponsorship VARCHAR(100)
 );
-
--- Performance Indexes
-CREATE INDEX IF NOT EXISTS idx_sales_created_at ON sales(created_at);
-CREATE INDEX IF NOT EXISTS idx_sales_store_id ON sales(store_id);
-CREATE INDEX IF NOT EXISTS idx_sales_channel_id ON sales(channel_id);
-CREATE INDEX IF NOT EXISTS idx_sales_customer_id ON sales(customer_id);
-CREATE INDEX IF NOT EXISTS idx_product_sales_sale_id ON product_sales(sale_id);
-CREATE INDEX IF NOT EXISTS idx_product_sales_product_id ON product_sales(product_id);
-CREATE INDEX IF NOT EXISTS idx_delivery_addresses_sale_id ON delivery_addresses(sale_id);
-CREATE INDEX IF NOT EXISTS idx_delivery_addresses_city ON delivery_addresses(city);
-CREATE INDEX IF NOT EXISTS idx_delivery_addresses_state ON delivery_addresses(state);

@@ -140,34 +140,67 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Templates Section */}
+      {/* Categorias Principais */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        {/* Template 1 */}
-        <Link href="/analytics/produtos" className="border rounded-2xl p-6 soft-shadow card-hover block bg-white">
-          <div className="text-5xl mb-4">🍔</div>
-          <h3 className="text-xl font-bold mb-3 text-gray-900">Produtos Mais Vendidos</h3>
-          <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-            Descubra quais produtos vendem mais em cada canal e horário
+        {/* Produtos */}
+        <Link href="/analytics/produtos-hub" className="border rounded-2xl p-6 soft-shadow card-hover block bg-gradient-to-br from-purple-50 to-purple-100 hover:shadow-lg transition-all">
+          <div className="text-5xl mb-4">📦</div>
+          <h3 className="text-xl font-bold mb-3 text-purple-900">Análises de Produtos</h3>
+          <p className="text-sm text-purple-700 mb-4 leading-relaxed">
+            Produtos vendidos, items, alterações e combinações
           </p>
+          <div className="text-xs text-purple-600 mb-4">
+            4 análises disponíveis
+          </div>
           <div className="w-full bg-gradient-to-r from-purple-600 to-purple-500 text-white px-4 py-3 rounded-xl hover:from-purple-700 hover:to-purple-600 transition-all text-center font-medium">
-            Ver Análise →
+            Explorar →
           </div>
         </Link>
 
-        {/* Template 2 */}
-        <Link href="/analytics/entrega" className="border rounded-2xl p-6 soft-shadow card-hover block bg-white">
+        {/* Vendas & Operação */}
+        <Link href="/analytics/vendas-hub" className="border rounded-2xl p-6 soft-shadow card-hover block bg-gradient-to-br from-blue-50 to-blue-100 hover:shadow-lg transition-all">
+          <div className="text-5xl mb-4">💼</div>
+          <h3 className="text-xl font-bold mb-3 text-blue-900">Vendas & Operação</h3>
+          <p className="text-sm text-blue-700 mb-4 leading-relaxed">
+            Canais, ticket médio, margens, cancelamentos e descontos
+          </p>
+          <div className="text-xs text-blue-600 mb-4">
+            5 análises disponíveis
+          </div>
+          <div className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-3 rounded-xl hover:from-blue-700 hover:to-blue-600 transition-all text-center font-medium">
+            Explorar →
+          </div>
+        </Link>
+
+        {/* Performance */}
+        <Link href="/analytics/performance-hub" className="border rounded-2xl p-6 soft-shadow card-hover block bg-gradient-to-br from-indigo-50 to-indigo-100 hover:shadow-lg transition-all">
+          <div className="text-5xl mb-4">⚡</div>
+          <h3 className="text-xl font-bold mb-3 text-indigo-900">Performance</h3>
+          <p className="text-sm text-indigo-700 mb-4 leading-relaxed">
+            Performance por loja e horário
+          </p>
+          <div className="text-xs text-indigo-600 mb-4">
+            2 análises disponíveis
+          </div>
+          <div className="w-full bg-gradient-to-r from-indigo-600 to-indigo-500 text-white px-4 py-3 rounded-xl hover:from-indigo-700 hover:to-indigo-600 transition-all text-center font-medium">
+            Explorar →
+          </div>
+        </Link>
+
+        {/* Entrega */}
+        <Link href="/analytics/entrega" className="border rounded-2xl p-6 soft-shadow card-hover block bg-white hover:shadow-lg transition-all">
           <div className="text-5xl mb-4">🚚</div>
           <h3 className="text-xl font-bold mb-3 text-gray-900">Tempo de Entrega</h3>
           <p className="text-sm text-gray-600 mb-6 leading-relaxed">
             Compare tempos de entrega entre períodos e regiões
           </p>
-          <div className="w-full bg-gradient-to-r from-purple-600 to-purple-500 text-white px-4 py-3 rounded-xl hover:from-purple-700 hover:to-purple-600 transition-all text-center font-medium">
+          <div className="w-full bg-gradient-to-r from-orange-600 to-orange-500 text-white px-4 py-3 rounded-xl hover:from-orange-700 hover:to-orange-600 transition-all text-center font-medium">
             Ver Análise →
           </div>
         </Link>
 
-        {/* Template 3 */}
-        <Link href="/analytics/clientes" className="border rounded-2xl p-6 soft-shadow card-hover block bg-white">
+        {/* Clientes */}
+        <Link href="/analytics/clientes" className="border rounded-2xl p-6 soft-shadow card-hover block bg-white hover:shadow-lg transition-all">
           <div className="text-5xl mb-4">👥</div>
           <h3 className="text-xl font-bold mb-3 text-gray-900">Clientes para Recompra</h3>
           <p className="text-sm text-gray-600 mb-6 leading-relaxed">
@@ -178,107 +211,15 @@ export default function Home() {
           </div>
         </Link>
 
-        {/* Quick Analytics */}
-        <Link href="/analytics/canais" className="border rounded-2xl p-6 soft-shadow card-hover block bg-white">
+        {/* Comparativo Customizado */}
+        <Link href="/analytics/comparativo" className="border rounded-2xl p-6 soft-shadow card-hover block bg-white hover:shadow-lg transition-all">
           <div className="text-5xl mb-4">📊</div>
-          <h3 className="text-xl font-bold mb-3 text-gray-900">Faturamento por Canal</h3>
+          <h3 className="text-xl font-bold mb-3 text-gray-900">Comparativo Customizado</h3>
           <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-            Visualize quanto cada canal está faturando
+            Compare métricas entre períodos, canais, lojas ou produtos de forma personalizada
           </p>
-          <div className="w-full bg-gradient-to-r from-purple-600 to-purple-500 text-white px-4 py-3 rounded-xl hover:from-purple-700 hover:to-purple-600 transition-all text-center font-medium">
+          <div className="w-full bg-gradient-to-r from-indigo-600 to-indigo-500 text-white px-4 py-3 rounded-xl hover:from-indigo-700 hover:to-indigo-600 transition-all text-center font-medium">
             Ver Análise →
-          </div>
-        </Link>
-
-        <Link href="/analytics/ticket-medio" className="border rounded-2xl p-6 soft-shadow card-hover block bg-white">
-          <div className="text-5xl mb-4">💰</div>
-          <h3 className="text-xl font-bold mb-3 text-gray-900">Ticket Médio</h3>
-          <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-            Identifique se o ticket médio está caindo por canal ou por loja
-          </p>
-          <div className="w-full bg-gradient-to-r from-purple-600 to-purple-500 text-white px-4 py-3 rounded-xl hover:from-purple-700 hover:to-purple-600 transition-all text-center font-medium">
-            Ver Análise →
-          </div>
-        </Link>
-
-        <Link href="/analytics/margem" className="border rounded-2xl p-6 soft-shadow card-hover block bg-white">
-          <div className="text-5xl mb-4">📉</div>
-          <h3 className="text-xl font-bold mb-3 text-gray-900">Produtos com Menor Margem</h3>
-          <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-            Identifique produtos com menor margem e avalie se precisa repensar o preço
-          </p>
-          <div className="w-full bg-gradient-to-r from-purple-600 to-purple-500 text-white px-4 py-3 rounded-xl hover:from-purple-700 hover:to-purple-600 transition-all text-center font-medium">
-            Ver Análise →
-          </div>
-        </Link>
-
-        <Link href="/analytics/horario" className="border rounded-2xl p-6 soft-shadow card-hover block bg-white">
-          <div className="text-5xl mb-4">⏰</div>
-          <h3 className="text-xl font-bold mb-3 text-gray-900">Performance por Horário</h3>
-          <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-            Analise vendas e faturamento por hora do dia ou dia da semana
-          </p>
-          <div className="w-full bg-gradient-to-r from-purple-600 to-purple-500 text-white px-4 py-3 rounded-xl hover:from-purple-700 hover:to-purple-600 transition-all text-center font-medium">
-            Ver Análise →
-          </div>
-        </Link>
-
-        <Link href="/analytics/cancelamentos" className="border rounded-2xl p-6 soft-shadow card-hover block bg-white">
-          <div className="text-5xl mb-4">❌</div>
-          <h3 className="text-xl font-bold mb-3 text-gray-900">Taxa de Cancelamento</h3>
-          <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-            Monitore a taxa de cancelamento e identifique padrões
-          </p>
-          <div className="w-full bg-gradient-to-r from-purple-600 to-purple-500 text-white px-4 py-3 rounded-xl hover:from-purple-700 hover:to-purple-600 transition-all text-center font-medium">
-            Ver Análise →
-          </div>
-        </Link>
-
-        <Link href="/analytics/descontos" className="border rounded-2xl p-6 soft-shadow card-hover block bg-white">
-          <div className="text-5xl mb-4">🎁</div>
-          <h3 className="text-xl font-bold mb-3 text-gray-900">Análise de Descontos</h3>
-          <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-            Monitore descontos aplicados e identifique padrões
-          </p>
-          <div className="w-full bg-gradient-to-r from-purple-600 to-purple-500 text-white px-4 py-3 rounded-xl hover:from-purple-700 hover:to-purple-600 transition-all text-center font-medium">
-            Ver Análise →
-          </div>
-        </Link>
-
-        <Link href="/analytics/items" className="border rounded-2xl p-6 soft-shadow card-hover block bg-white">
-          <div className="text-5xl mb-4">🔧</div>
-          <h3 className="text-xl font-bold mb-3 text-gray-900">Items Mais Vendidos</h3>
-          <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-            Descubra quais complementos, molhos e adicionais são mais solicitados
-          </p>
-          <div className="w-full bg-gradient-to-r from-purple-600 to-purple-500 text-white px-4 py-3 rounded-xl hover:from-purple-700 hover:to-purple-600 transition-all text-center font-medium">
-            Ver Análise →
-          </div>
-        </Link>
-
-        <Link href="/analytics/produtos-alteracoes" className="border rounded-2xl p-6 soft-shadow card-hover block bg-white">
-          <div className="text-5xl mb-4">🔄</div>
-          <h3 className="text-xl font-bold mb-3 text-gray-900">Produtos com Mais Alterações</h3>
-          <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-            Descubra quais produtos recebem mais customizações e itens adicionais
-          </p>
-          <div className="w-full bg-gradient-to-r from-purple-600 to-purple-500 text-white px-4 py-3 rounded-xl hover:from-purple-700 hover:to-purple-600 transition-all text-center font-medium">
-            Ver Análise →
-          </div>
-        </Link>
-
-        <Link href="/analytics/lojas" className="md:col-span-2 lg:col-span-3 border rounded-2xl p-6 soft-shadow card-hover block bg-gradient-to-br from-indigo-50 to-indigo-100">
-          <div className="flex items-center gap-4">
-            <div className="text-6xl">🏪</div>
-            <div className="flex-1">
-              <h3 className="text-2xl font-bold mb-2 text-indigo-900">Performance das Lojas</h3>
-              <p className="text-base text-indigo-700 mb-4">
-                Compare faturamento, vendas, ticket médio e tempo de entrega entre lojas
-              </p>
-              <div className="w-full max-w-xs bg-gradient-to-r from-indigo-600 to-indigo-500 text-white px-6 py-3 rounded-xl hover:from-indigo-700 hover:to-indigo-600 transition-all text-center font-medium">
-                Ver Análise →
-              </div>
-            </div>
           </div>
         </Link>
       </div>

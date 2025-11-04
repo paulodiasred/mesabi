@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, Cell } from 'recharts';
+import Link from 'next/link';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, Cell, CartesianGrid } from 'recharts';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { getHubForPage, getHubName } from '../utils';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
@@ -29,6 +31,7 @@ export default function ProdutosAnalyticsPage() {
   const [filters, setFilters] = useState<{ dayOfWeek?: number; hourFrom?: number; hourTo?: number; channelId?: number }>({});
   const [dashboardView, setDashboardView] = useState<'faturamento' | 'quantidade'>('faturamento');
   const [expandedTable, setExpandedTable] = useState(false);
+  const [chartItemsToShow, setChartItemsToShow] = useState(10);
 
   // Load data on mount
   useEffect(() => {
@@ -120,10 +123,21 @@ export default function ProdutosAnalyticsPage() {
     return result?.data?.[0] && typeof result.data[0][key] === 'number';
   };
 
+  const hubPath = getHubForPage('/analytics/produtos');
+
   return (
     <div className="max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
+        {hubPath && (
+          <Link 
+            href={hubPath} 
+            className="text-purple-600 hover:text-purple-700 mb-4 inline-flex items-center gap-2 transition-colors"
+          >
+            <span>←</span>
+            <span>Voltar para {getHubName(hubPath)}</span>
+          </Link>
+        )}
         <h1 className="text-3xl font-bold text-gray-900 mb-2">🍔 Produtos Mais Vendidos</h1>
         <p className="text-gray-600">
           Descubra quais produtos vendem mais em cada canal e horário
@@ -282,49 +296,81 @@ export default function ProdutosAnalyticsPage() {
                     </button>
                   </div>
                 </div>
-                <ResponsiveContainer width="100%" height={400}>
-                  {dashboardView === 'faturamento' ? (
-                    <BarChart data={getSortedData().slice(0, 10)}>
-                      <XAxis 
-                        dataKey="product_name" 
-                        angle={-45} 
-                        textAnchor="end" 
-                        height={100}
-                        tick={{ fontSize: 12 }}
-                        stroke="#6b7280"
-                      />
-                      <YAxis 
-                        tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
-                        stroke="#6b7280"
-                      />
-                      <Tooltip 
-                        formatter={(value: number) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-                        contentStyle={{ borderRadius: '12px', border: '2px solid #e879f9' }}
-                      />
-                      <Bar dataKey="faturamento" fill="#9333ea" radius={[12, 12, 0, 0]} />
-                    </BarChart>
-                  ) : (
-                    <BarChart data={getSortedData().slice(0, 10)}>
-                      <XAxis 
-                        dataKey="product_name" 
-                        angle={-45} 
-                        textAnchor="end" 
-                        height={100}
-                        tick={{ fontSize: 12 }}
-                        stroke="#6b7280"
-                      />
-                      <YAxis 
-                        tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value.toLocaleString('pt-BR')}
-                        stroke="#6b7280"
-                      />
-                      <Tooltip 
-                        formatter={(value: number) => `${value.toLocaleString('pt-BR')} unidades`}
-                        contentStyle={{ borderRadius: '12px', border: '2px solid #e879f9' }}
-                      />
-                      <Bar dataKey="quantidade" fill="#c084fc" radius={[12, 12, 0, 0]} />
-                    </BarChart>
-                  )}
-                </ResponsiveContainer>
+                <div className="flex items-center justify-end mb-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-gray-600">Mostrar:</span>
+                    <select
+                      value={chartItemsToShow}
+                      onChange={(e) => setChartItemsToShow(Number(e.target.value))}
+                      className="px-3 py-1.5 border border-purple-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value={10}>Top 10</option>
+                      <option value={25}>Top 25</option>
+                      <option value={50}>Top 50</option>
+                      <option value={getSortedData().length}>Todos ({getSortedData().length})</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="overflow-x-auto -mx-4 px-4">
+                  <div style={{ minWidth: `${Math.max(800, chartItemsToShow * 60)}px` }}>
+                    <ResponsiveContainer width="100%" height={400}>
+                      {dashboardView === 'faturamento' ? (
+                        <BarChart data={getSortedData().slice(0, chartItemsToShow).map((item: any, index: number) => ({
+                          ...item,
+                          chart_label: `#${index + 1}`,
+                          product_name_full: item.product_name || `Produto ${item.product_id}`
+                        }))}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis 
+                            dataKey="chart_label"
+                            tick={{ fontSize: 12 }}
+                            interval={0}
+                          />
+                          <YAxis 
+                            tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                          />
+                          <Tooltip 
+                            formatter={(value: number) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                            labelFormatter={(label: string, payload: any) => {
+                              return payload?.[0]?.payload?.product_name_full || label;
+                            }}
+                            contentStyle={{ borderRadius: '12px', border: '2px solid #e879f9' }}
+                          />
+                          <Bar dataKey="faturamento" fill="#9333ea" radius={[12, 12, 0, 0]} />
+                        </BarChart>
+                      ) : (
+                        <BarChart data={getSortedData().slice(0, chartItemsToShow).map((item: any, index: number) => ({
+                          ...item,
+                          chart_label: `#${index + 1}`,
+                          product_name_full: item.product_name || `Produto ${item.product_id}`
+                        }))}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis 
+                            dataKey="chart_label"
+                            tick={{ fontSize: 12 }}
+                            interval={0}
+                          />
+                          <YAxis 
+                            tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value.toLocaleString('pt-BR')}
+                          />
+                          <Tooltip 
+                            formatter={(value: number) => `${value.toLocaleString('pt-BR')} unidades`}
+                            labelFormatter={(label: string, payload: any) => {
+                              return payload?.[0]?.payload?.product_name_full || label;
+                            }}
+                            contentStyle={{ borderRadius: '12px', border: '2px solid #e879f9' }}
+                          />
+                          <Bar dataKey="quantidade" fill="#c084fc" radius={[12, 12, 0, 0]} />
+                        </BarChart>
+                      )}
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+                {chartItemsToShow < getSortedData().length && (
+                  <p className="text-xs text-gray-500 mt-2 text-center">
+                    Mostrando {chartItemsToShow} de {getSortedData().length} produtos. Use o seletor acima para ver mais ou arraste o gráfico.
+                  </p>
+                )}
               </div>
 
               {/* Table */}

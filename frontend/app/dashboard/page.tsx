@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { format, subDays, startOfMonth, endOfMonth, subMonths } from 'date-fns';
-import { Bar, BarChart, Line, LineChart, Pie, PieChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, Cell } from 'recharts';
+import { Bar, BarChart, Line, LineChart, Pie, PieChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, Cell, CartesianGrid } from 'recharts';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
@@ -14,6 +14,7 @@ interface DashboardData {
   revenueByChannel: Array<{ channel_id: string; total: number }>;
   revenueByDay: Array<{ day: string; current: number; previous: number }>;
   topProducts: Array<{ product_id: string; sales: number; revenue: number }>;
+  anomalies?: Array<{ date: string; type: 'spike' | 'drop'; description: string; value: number; change: number }>;
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
@@ -120,8 +121,54 @@ export default function DashboardPage() {
       const revenueByDay = dailyData.map((item: any, idx: number) => ({
         day: format(new Date(item.created_at_day || item.created_at), 'dd/MM'),
         current: item.total || 0,
-        previous: previousDaily[idx]?.total || 0
+        previous: previousDaily[idx]?.total || 0,
+        date: item.created_at_day || item.created_at
       }));
+
+      // Detectar anomalias (picos e quedas)
+      const anomalies: Array<{ date: string; type: 'spike' | 'drop'; description: string; value: number; change: number }> = [];
+      
+      if (revenueByDay.length > 0) {
+        // Calcular média e desvio padrão
+        const values = revenueByDay.map((d: any) => d.current);
+        const avg = values.reduce((a: number, b: number) => a + b, 0) / values.length;
+        const variance = values.reduce((sum: number, val: number) => sum + Math.pow(val - avg, 2), 0) / values.length;
+        const stdDev = Math.sqrt(variance);
+        const threshold = 2 * stdDev; // 2 desvios padrão
+        
+        revenueByDay.forEach((day: any, idx: number) => {
+          const diff = day.current - avg;
+          const absDiff = Math.abs(diff);
+          
+          // Detectar pico (mais de 2 desvios padrão acima da média)
+          if (diff > threshold && day.current > 0) {
+            const changePercent = ((diff / avg) * 100).toFixed(1);
+            anomalies.push({
+              date: day.day,
+              type: 'spike',
+              description: `Pico de ${changePercent}% acima da média`,
+              value: day.current,
+              change: Number(changePercent)
+            });
+          }
+          
+          // Detectar queda (mais de 2 desvios padrão abaixo da média)
+          if (diff < -threshold && day.current > 0) {
+            const changePercent = ((Math.abs(diff) / avg) * 100).toFixed(1);
+            anomalies.push({
+              date: day.day,
+              type: 'drop',
+              description: `Queda de ${changePercent}% abaixo da média`,
+              value: day.current,
+              change: Number(changePercent)
+            });
+          }
+        });
+        
+        // Limitar a 5 anomalias mais significativas
+        anomalies.sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
+        anomalies.splice(5);
+      }
 
       setData({
         totalRevenue,
@@ -129,7 +176,8 @@ export default function DashboardPage() {
         avgTicket: totalOrders > 0 ? totalRevenue / totalOrders : 0,
         revenueByChannel,
         revenueByDay,
-        topProducts: []
+        topProducts: [],
+        anomalies: anomalies.length > 0 ? anomalies : undefined
       });
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -236,17 +284,88 @@ export default function DashboardPage() {
 
         {/* Daily Revenue Trend */}
         <div className="border rounded-lg p-6">
-          <h3 className="text-lg font-semibold mb-4">Faturamento Diário</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={data.revenueByDay || []}>
-              <XAxis dataKey="day" />
-              <YAxis />
-              <Tooltip formatter={(value: number) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
-              <Legend />
-              <Line type="monotone" dataKey="current" stroke="#0088FE" strokeWidth={2} name="Período Atual" />
-              {compare && <Line type="monotone" dataKey="previous" stroke="#8884D8" strokeWidth={2} name="Período Anterior" />}
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Faturamento Diário</h3>
+            {compare && (
+              <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                  <span>Período Atual</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                  <span>Período Anterior</span>
+                </div>
+              </div>
+            )}
+          </div>
+          <ResponsiveContainer width="100%" height={350}>
+            <LineChart data={data.revenueByDay || []} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis 
+                dataKey="day" 
+                stroke="#6b7280"
+                tick={{ fill: '#6b7280', fontSize: 12 }}
+                angle={-45}
+                textAnchor="end"
+                height={80}
+              />
+              <YAxis 
+                stroke="#6b7280"
+                tick={{ fill: '#6b7280', fontSize: 12 }}
+                tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`}
+              />
+              <Tooltip 
+                formatter={(value: number) => [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, '']}
+                contentStyle={{ 
+                  backgroundColor: 'white', 
+                  border: '1px solid #e5e7eb', 
+                  borderRadius: '8px',
+                  padding: '8px 12px'
+                }}
+                labelStyle={{ color: '#374151', fontWeight: 600 }}
+              />
+              <Legend 
+                wrapperStyle={{ paddingTop: '20px' }}
+                iconType="line"
+              />
+              <Line 
+                type="monotone" 
+                dataKey="current" 
+                stroke="#0088FE" 
+                strokeWidth={3} 
+                name="Período Atual"
+                dot={{ fill: '#0088FE', r: 4 }}
+                activeDot={{ r: 6 }}
+              />
+              {compare && (
+                <Line 
+                  type="monotone" 
+                  dataKey="previous" 
+                  stroke="#8884D8" 
+                  strokeWidth={2} 
+                  strokeDasharray="5 5"
+                  name="Período Anterior"
+                  dot={{ fill: '#8884D8', r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+              )}
             </LineChart>
           </ResponsiveContainer>
+          
+          {/* Anomalias detectadas */}
+          {data.anomalies && data.anomalies.length > 0 && (
+            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="text-sm font-semibold text-yellow-800 mb-2">⚠️ Anomalias Detectadas</div>
+              <div className="text-xs text-yellow-700 space-y-1">
+                {data.anomalies.slice(0, 3).map((anomaly: any, idx: number) => (
+                  <div key={idx}>
+                    {anomaly.type === 'spike' ? '📈' : '📉'} {anomaly.date}: {anomaly.description}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

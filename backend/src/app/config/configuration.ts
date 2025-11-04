@@ -21,8 +21,8 @@ export default () => ({
     prefix: process.env.API_PREFIX || 'api/v1',
   },
   query: {
-    timeout: parseInt(process.env.QUERY_TIMEOUT, 10) || 30000,
-    maxLimit: parseInt(process.env.QUERY_MAX_LIMIT, 10) || 10000,
+    timeout: parseInt(process.env.QUERY_TIMEOUT, 10) || 60000,
+    maxLimit: parseInt(process.env.QUERY_MAX_LIMIT, 10) || 100000,
   },
 });
 

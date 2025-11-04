@@ -42,9 +42,17 @@ export default function RootLayout({
                 <div className="text-xs text-purple-200 uppercase tracking-wider px-4 py-3 font-bold">
                   Análises
                 </div>
-                <a href="/analytics/produtos" className="flex items-center gap-3 px-4 py-3 rounded-xl text-purple-100 hover:bg-white/25 hover:shadow-lg transition-all duration-200 group">
-                  <span className="text-lg">🍔</span>
+                <a href="/analytics/produtos-hub" className="flex items-center gap-3 px-4 py-3 rounded-xl text-purple-100 hover:bg-white/25 hover:shadow-lg transition-all duration-200 group">
+                  <span className="text-lg">📦</span>
                   <span className="font-medium text-sm group-hover:translate-x-1 transition-transform">Produtos</span>
+                </a>
+                <a href="/analytics/vendas-hub" className="flex items-center gap-3 px-4 py-3 rounded-xl text-purple-100 hover:bg-white/25 hover:shadow-lg transition-all duration-200 group">
+                  <span className="text-lg">💼</span>
+                  <span className="font-medium text-sm group-hover:translate-x-1 transition-transform">Vendas & Operação</span>
+                </a>
+                <a href="/analytics/performance-hub" className="flex items-center gap-3 px-4 py-3 rounded-xl text-purple-100 hover:bg-white/25 hover:shadow-lg transition-all duration-200 group">
+                  <span className="text-lg">⚡</span>
+                  <span className="font-medium text-sm group-hover:translate-x-1 transition-transform">Performance</span>
                 </a>
                 <a href="/analytics/entrega" className="flex items-center gap-3 px-4 py-3 rounded-xl text-purple-100 hover:bg-white/25 hover:shadow-lg transition-all duration-200 group">
                   <span className="text-lg">🚚</span>
@@ -53,42 +61,6 @@ export default function RootLayout({
                 <a href="/analytics/clientes" className="flex items-center gap-3 px-4 py-3 rounded-xl text-purple-100 hover:bg-white/25 hover:shadow-lg transition-all duration-200 group">
                   <span className="text-lg">👥</span>
                   <span className="font-medium text-sm group-hover:translate-x-1 transition-transform">Clientes</span>
-                </a>
-                <a href="/analytics/canais" className="flex items-center gap-3 px-4 py-3 rounded-xl text-purple-100 hover:bg-white/25 hover:shadow-lg transition-all duration-200 group">
-                  <span className="text-lg">📊</span>
-                  <span className="font-medium text-sm group-hover:translate-x-1 transition-transform">Canais</span>
-                </a>
-                <a href="/analytics/ticket-medio" className="flex items-center gap-3 px-4 py-3 rounded-xl text-purple-100 hover:bg-white/25 hover:shadow-lg transition-all duration-200 group">
-                  <span className="text-lg">💰</span>
-                  <span className="font-medium text-sm group-hover:translate-x-1 transition-transform">Ticket Médio</span>
-                </a>
-                <a href="/analytics/margem" className="flex items-center gap-3 px-4 py-3 rounded-xl text-purple-100 hover:bg-white/25 hover:shadow-lg transition-all duration-200 group">
-                  <span className="text-lg">📉</span>
-                  <span className="font-medium text-sm group-hover:translate-x-1 transition-transform">Margem</span>
-                </a>
-                <a href="/analytics/lojas" className="flex items-center gap-3 px-4 py-3 rounded-xl text-purple-100 hover:bg-white/25 hover:shadow-lg transition-all duration-200 group">
-                  <span className="text-lg">🏪</span>
-                  <span className="font-medium text-sm group-hover:translate-x-1 transition-transform">Lojas</span>
-                </a>
-                <a href="/analytics/horario" className="flex items-center gap-3 px-4 py-3 rounded-xl text-purple-100 hover:bg-white/25 hover:shadow-lg transition-all duration-200 group">
-                  <span className="text-lg">⏰</span>
-                  <span className="font-medium text-sm group-hover:translate-x-1 transition-transform">Horário</span>
-                </a>
-                <a href="/analytics/cancelamentos" className="flex items-center gap-3 px-4 py-3 rounded-xl text-purple-100 hover:bg-white/25 hover:shadow-lg transition-all duration-200 group">
-                  <span className="text-lg">❌</span>
-                  <span className="font-medium text-sm group-hover:translate-x-1 transition-transform">Cancelamentos</span>
-                </a>
-                <a href="/analytics/descontos" className="flex items-center gap-3 px-4 py-3 rounded-xl text-purple-100 hover:bg-white/25 hover:shadow-lg transition-all duration-200 group">
-                  <span className="text-lg">🎁</span>
-                  <span className="font-medium text-sm group-hover:translate-x-1 transition-transform">Descontos</span>
-                </a>
-                <a href="/analytics/items" className="flex items-center gap-3 px-4 py-3 rounded-xl text-purple-100 hover:bg-white/25 hover:shadow-lg transition-all duration-200 group">
-                  <span className="text-lg">🔧</span>
-                  <span className="font-medium text-sm group-hover:translate-x-1 transition-transform">Items</span>
-                </a>
-                <a href="/analytics/produtos-alteracoes" className="flex items-center gap-3 px-4 py-3 rounded-xl text-purple-100 hover:bg-white/25 hover:shadow-lg transition-all duration-200 group">
-                  <span className="text-lg">🔄</span>
-                  <span className="font-medium text-sm group-hover:translate-x-1 transition-transform">Produtos Alterações</span>
                 </a>
               </nav>
               <div className="p-5 border-t border-purple-500/50 bg-gradient-to-t from-purple-900/30 to-transparent">

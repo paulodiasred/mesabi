@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { getHubForPage, getHubName } from '../utils';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
@@ -129,9 +131,20 @@ export default function DescontosAnalyticsPage() {
     if (!wasExpanded) setExpandedTable(false);
   };
 
+  const hubPath = getHubForPage('/analytics/descontos');
+
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-8">
+        {hubPath && (
+          <Link 
+            href={hubPath} 
+            className="text-purple-600 hover:text-purple-700 mb-4 inline-flex items-center gap-2 transition-colors"
+          >
+            <span>←</span>
+            <span>Voltar para {getHubName(hubPath)}</span>
+          </Link>
+        )}
         <h1 className="text-3xl font-bold text-gray-900 mb-2">🎁 Análise de Descontos</h1>
         <p className="text-gray-600">
           Monitore descontos aplicados e identifique padrões

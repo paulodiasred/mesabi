@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: comidasmart-backend
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: cd backend && npm ci && npm run build
+    startCommand: cd backend && node dist/main
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+    healthCheckPath: /api/v1/health
+
+  - type: web
+    name: comidasmart-frontend
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: cd frontend && npm ci && npm run build
+    startCommand: cd frontend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+
+  - type: pspg
+    name: comidasmart-db
+    plan: free
+    databaseName: comidasmart_db
+    databaseUser: comidasmart
+

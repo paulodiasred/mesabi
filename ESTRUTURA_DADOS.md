@@ -238,3 +238,4 @@ Com essa estrutura completa, o ComidaSmart pode responder:
 - `backend/prisma/schema.prisma`: Schema Prisma (usado pela aplicação)
 - `backend/prisma/seed.ts`: Script de seed automático
 
+

@@ -132,11 +132,11 @@ export class QueryRequestDto {
   @IsString()
   compareTo?: string;
 
-  @ApiProperty({ required: false, minimum: 1, maximum: 10000 })
+  @ApiProperty({ required: false, minimum: 1, maximum: 100000 })
   @IsOptional()
   @IsNumber()
   @Min(1)
-  @Max(10000)
+  @Max(100000)
   limit?: number;
 
   @ApiProperty({ required: false })

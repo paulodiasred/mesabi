@@ -32,7 +32,18 @@ export class QueryService {
     const groupByClause = this.buildGroupByClause(dimensions, subject);
 
     // Build ORDER BY clause
-    const orderByClause = this.buildOrderByClause(orderBy);
+    let orderByClause = this.buildOrderByClause(orderBy);
+    
+    // Se não há ORDER BY e há LIMIT para produtos com sale_id, ordenar por total_price DESC
+    // Isso garante que pegamos as vendas com maior valor primeiro, que geralmente têm mais produtos
+    // e geram mais combinações relevantes
+    if (!orderByClause && limit && subject === 'produtos' && dimensions?.some(d => d.field === 'sale_id')) {
+      // Ordenar por total_price DESC (usando o alias da medida agregada)
+      // Essas vendas geralmente têm mais produtos e geram mais combinações
+      // O alias será o nome da medida (geralmente 'total_price')
+      const measureName = measures && measures.length > 0 ? measures[0].name : 'total_price';
+      orderByClause = `ORDER BY ${measureName} DESC, product_sales.sale_id DESC`;
+    }
 
     // Build LIMIT clause
     const limitClause = limit ? `LIMIT ${limit}` : '';
@@ -91,6 +102,19 @@ export class QueryService {
         if (['total_amount', 'total_amount_items', 'total_discount', 'total_increase', 
              'delivery_fee', 'service_tax_fee', 'value_paid'].includes(field)) {
           return `sales.${field}`;
+        }
+      } else if (subj === 'produtos') {
+        // Prefix fields for produtos
+        if (field === 'id') {
+          return 'product_sales.id';
+        }
+        // For produtos, fields come from product_sales table
+        if (['quantity', 'total_price', 'unit_price', 'discount'].includes(field)) {
+          return `product_sales.${field}`;
+        }
+        // total_amount for produtos comes from product_sales.total_price
+        if (field === 'total_amount') {
+          return 'product_sales.total_price';  // Use total_price for produtos
         }
       } else if (subj === 'items') {
         // Prefix fields for items
@@ -151,6 +175,18 @@ export class QueryService {
         } else if (dim.field === 'product_id' && subject === 'items') {
           // Prefix product_id for items (from product_sales)
           selects.push(`ps.product_id`);
+        } else if (dim.field === 'sale_id' && subject === 'produtos') {
+          // Prefix sale_id for produtos (from product_sales)
+          selects.push(`product_sales.sale_id`);
+        } else if (dim.field === 'product_id' && subject === 'produtos') {
+          // Prefix product_id for produtos (from product_sales)
+          selects.push(`product_sales.product_id`);
+        } else if (dim.field === 'channel_id' && (subject === 'produtos' || subject === 'items')) {
+          // Prefix channel_id for produtos and items (from sales)
+          selects.push(subject === 'produtos' ? `s.channel_id` : `s.channel_id`);
+        } else if (dim.field === 'store_id' && (subject === 'produtos' || subject === 'items')) {
+          // Prefix store_id for produtos and items (from sales)
+          selects.push(subject === 'produtos' ? `s.store_id` : `s.store_id`);
         } else {
           selects.push(dim.field);
         }
@@ -159,8 +195,19 @@ export class QueryService {
 
     // Add names when needed
     if (dimensions && dimensions.length > 0 && subject === 'produtos') {
-      // Add product name
+      // Add product name if grouping by product_id
+      if (dimensions.some(d => d.field === 'product_id')) {
       selects.push(`p.name AS product_name`);
+      }
+      // Add channel/store names if grouping by channel_id or store_id
+      const needsChannelName = dimensions.some(d => d.field === 'channel_id');
+      const needsStoreName = dimensions.some(d => d.field === 'store_id');
+      if (needsChannelName) {
+        selects.push(`ch.name AS channel_name`);
+      }
+      if (needsStoreName) {
+        selects.push(`st.name AS store_name`);
+      }
     } else if (dimensions && dimensions.length > 0 && subject === 'vendas') {
       // Add store/channel/customer names if grouping by them
       const needsStoreName = dimensions.some(d => d.field === 'store_id');
@@ -171,7 +218,7 @@ export class QueryService {
         selects.push(`st.name AS store_name`);
       }
       if (needsChannelName) {
-        selects.push(`ch.description AS channel_name`);
+        selects.push(`ch.name AS channel_name`);
       }
       if (needsCustomerName) {
         selects.push(`c.customer_name AS customer_name`);
@@ -186,6 +233,15 @@ export class QueryService {
       const needsProductName = dimensions.some(d => d.field === 'product_id');
       if (needsProductName) {
         selects.push(`p.name AS product_name`);
+      }
+      // Add channel/store names if grouping by channel_id or store_id
+      const needsChannelName = dimensions.some(d => d.field === 'channel_id');
+      const needsStoreName = dimensions.some(d => d.field === 'store_id');
+      if (needsChannelName) {
+        selects.push(`ch.name AS channel_name`);
+      }
+      if (needsStoreName) {
+        selects.push(`st.name AS store_name`);
       }
     }
 
@@ -307,19 +363,32 @@ export class QueryService {
   private buildJoinClause(subject: string, dimensions: QueryDimensionDto[], filters?: QueryFilterDto[]): string {
     const joins: string[] = [];
 
-    if (subject === 'produtos' && dimensions && dimensions.some(d => d.field === 'product_id')) {
-      // JOIN products table to get product names
+    if (subject === 'produtos') {
+      // JOIN products table if grouping by product_id
+      if (dimensions && dimensions.some(d => d.field === 'product_id')) {
       joins.push('LEFT JOIN products p ON product_sales.product_id = p.id');
     }
 
-    // JOIN sales if filtering by channel_id, day of week, or hour from product_sales
-    if (subject === 'produtos' && filters && filters.length > 0) {
-      const needsSalesJoin = filters.some(f => 
-        f.field === 'channel_id' || f.field === 'day_of_week' || f.field === 'hour_from' || f.field === 'hour_to'
-      );
+      // JOIN sales if filtering by channel_id, day of week, hour, created_at, or grouping by sale_id or channel_id or store_id
+      const needsSalesJoin = 
+        (filters && filters.some(f => 
+          f.field === 'channel_id' || f.field === 'day_of_week' || f.field === 'hour_from' || 
+          f.field === 'hour_to' || f.field === 'created_at'
+        )) ||
+        (dimensions && dimensions.some(d => d.field === 'sale_id' || d.field === 'channel_id' || d.field === 'store_id'));
       
       if (needsSalesJoin) {
         joins.push('LEFT JOIN sales s ON product_sales.sale_id = s.id');
+      }
+      
+      // JOIN channels if grouping by channel_id
+      if (dimensions && dimensions.some(d => d.field === 'channel_id')) {
+        joins.push('LEFT JOIN channels ch ON s.channel_id = ch.id');
+      }
+      
+      // JOIN stores if grouping by store_id
+      if (dimensions && dimensions.some(d => d.field === 'store_id')) {
+        joins.push('LEFT JOIN stores st ON s.store_id = st.id');
       }
     }
 
@@ -336,6 +405,16 @@ export class QueryService {
       // JOIN products table to get product names if grouping by product_id
       if (dimensions && dimensions.some(d => d.field === 'product_id')) {
         joins.push('LEFT JOIN products p ON ps.product_id = p.id');
+      }
+      
+      // JOIN channels if grouping by channel_id
+      if (dimensions && dimensions.some(d => d.field === 'channel_id')) {
+        joins.push('LEFT JOIN channels ch ON s.channel_id = ch.id');
+      }
+      
+      // JOIN stores if grouping by store_id
+      if (dimensions && dimensions.some(d => d.field === 'store_id')) {
+        joins.push('LEFT JOIN stores st ON s.store_id = st.id');
       }
     }
 
@@ -388,13 +467,29 @@ export class QueryService {
         return `item_product_sales.item_id`;  // Prefix for items
       } else if (d.field === 'product_id' && subject === 'items') {
         return `ps.product_id`;  // Prefix for items (from product_sales)
+      } else if (d.field === 'sale_id' && subject === 'produtos') {
+        return `product_sales.sale_id`;  // Prefix for sale_id in produtos
+      } else if (d.field === 'product_id' && subject === 'produtos') {
+        return `product_sales.product_id`;  // Prefix for product_id in produtos
+      } else if (d.field === 'channel_id' && (subject === 'produtos' || subject === 'items')) {
+        return `s.channel_id`;  // Prefix for channel_id in produtos and items
+      } else if (d.field === 'store_id' && (subject === 'produtos' || subject === 'items')) {
+        return `s.store_id`;  // Prefix for store_id in produtos and items
       }
       return d.field;
     });
 
     // Add name fields to GROUP BY
-    if (subject === 'produtos' && dimensions.some(d => d.field === 'product_id')) {
+    if (subject === 'produtos') {
+      if (dimensions.some(d => d.field === 'product_id')) {
       groupByFields.push('p.name');
+      }
+      if (dimensions.some(d => d.field === 'channel_id')) {
+        groupByFields.push('ch.name', 'ch.id');
+      }
+      if (dimensions.some(d => d.field === 'store_id')) {
+        groupByFields.push('st.name', 'st.id');
+      }
     }
 
     if (subject === 'items') {
@@ -404,6 +499,12 @@ export class QueryService {
       if (dimensions.some(d => d.field === 'product_id')) {
         groupByFields.push('p.name');
       }
+      if (dimensions.some(d => d.field === 'channel_id')) {
+        groupByFields.push('ch.name', 'ch.id');
+      }
+      if (dimensions.some(d => d.field === 'store_id')) {
+        groupByFields.push('st.name', 'st.id');
+      }
     }
 
     if (subject === 'vendas') {
@@ -411,8 +512,8 @@ export class QueryService {
         groupByFields.push('st.name');
       }
       if (dimensions.some(d => d.field === 'channel_id')) {
-        // Group by description to handle duplicate channels with same name but different IDs
-        groupByFields.push('ch.description', 'ch.id');
+        // Group by name to handle duplicate channels with same name but different IDs
+        groupByFields.push('ch.name', 'ch.id');
       }
       if (dimensions.some(d => d.field === 'customer_id')) {
         groupByFields.push('c.customer_name');
@@ -457,6 +558,76 @@ export class QueryService {
     } catch (error) {
       this.logger.error(error);
       throw new BadRequestException(`Query execution failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Calculate product combinations directly in the database
+   * Much more efficient than fetching raw data and processing in frontend
+   */
+  async getProductCombinations(minOccurrences: number = 1, timeRange?: { start?: string; end?: string }) {
+    const startTime = Date.now();
+    
+    try {
+      // Build WHERE clause for time range
+      let whereClause = '';
+      if (timeRange?.start || timeRange?.end) {
+        const conditions: string[] = [];
+        if (timeRange.start) {
+          conditions.push(`s.created_at >= '${timeRange.start}'`);
+        }
+        if (timeRange.end) {
+          conditions.push(`s.created_at <= '${timeRange.end}'`);
+        }
+        whereClause = `WHERE ${conditions.join(' AND ')}`;
+      }
+
+      // SQL query to find product combinations
+      // This uses a self-join to find pairs of products that appear in the same sale
+      const sql = `
+        WITH combos AS (
+          SELECT 
+            LEAST(ps1.product_id, ps2.product_id) as prod1,
+            GREATEST(ps1.product_id, ps2.product_id) as prod2,
+            ps1.sale_id,
+            s.total_amount as sale_total
+          FROM product_sales ps1
+          JOIN product_sales ps2 ON ps1.sale_id = ps2.sale_id AND ps1.product_id < ps2.product_id
+          JOIN sales s ON ps1.sale_id = s.id
+          ${whereClause}
+        )
+        SELECT 
+          prod1 as "produto1_id",
+          prod2 as "produto2_id",
+          COUNT(*) as "vezes_juntos",
+          SUM(sale_total) as "receita_total",
+          AVG(sale_total) as "ticket_medio"
+        FROM combos
+        GROUP BY prod1, prod2
+        HAVING COUNT(*) >= ${minOccurrences}
+        ORDER BY vezes_juntos DESC, receita_total DESC
+        LIMIT 1000
+      `;
+
+      this.logger.debug(`Executing product combinations query: ${sql}`);
+
+      const rawResult = await this.prisma.$queryRawUnsafe(sql);
+      
+      // Convert BigInt to Number
+      const processedData = this.processBigInt(rawResult);
+
+      return {
+        data: processedData,
+        metadata: {
+          totalRows: Array.isArray(processedData) ? processedData.length : 0,
+          executionTime: Date.now() - startTime,
+          cached: false,
+          sql,
+        },
+      };
+    } catch (error) {
+      this.logger.error(`Error calculating product combinations: ${error.message}`, error.stack);
+      throw new BadRequestException(`Failed to calculate product combinations: ${error.message}`);
     }
   }
 

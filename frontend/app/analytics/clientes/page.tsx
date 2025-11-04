@@ -44,7 +44,9 @@ export default function ClientesAnalyticsPage() {
           subject: 'vendas',
           measures: [
             { name: 'total_compras', aggregation: 'count', field: 'id' },
-            { name: 'ultima_compra', aggregation: 'max', field: 'created_at' }
+            { name: 'ultima_compra', aggregation: 'max', field: 'created_at' },
+            { name: 'lifetime_value', aggregation: 'sum', field: 'total_amount' },
+            { name: 'primeira_compra', aggregation: 'min', field: 'created_at' }
           ],
           dimensions: [{ name: 'Cliente', field: 'customer_id' }],
           filters: [],
@@ -63,23 +65,50 @@ export default function ClientesAnalyticsPage() {
         // Debug: verificar distribuição de datas
         const clientsWith3Plus = data.data.filter((row: any) => Number(row.total_compras || 0) >= 3);
         
-        // Calcular dias desde última compra para todos
+        // Calcular dias desde última compra e métricas de Lifetime Value para todos
         const clientsWithDays = clientsWith3Plus.map((c: any) => {
           const daysSince = c.ultima_compra 
             ? Math.floor((new Date().getTime() - new Date(c.ultima_compra).getTime()) / (1000 * 60 * 60 * 24))
             : null;
+          
+          // Calcular dias desde primeira compra
+          const daysSinceFirst = c.primeira_compra
+            ? Math.floor((new Date().getTime() - new Date(c.primeira_compra).getTime()) / (1000 * 60 * 60 * 24))
+            : null;
+          
+          // Calcular ticket médio
+          const ltv = Number(c.lifetime_value || 0);
+          const totalCompras = Number(c.total_compras || 0);
+          const avgTicket = totalCompras > 0 && ltv > 0
+            ? ltv / totalCompras
+            : 0;
+          
+          // Calcular frequência de compra (compras por mês)
+          const monthsActive = daysSinceFirst ? Math.max(1, daysSinceFirst / 30) : 1;
+          const frequencyPerMonth = c.total_compras > 0 ? Number(c.total_compras) / monthsActive : 0;
+          
           return {
             ...c,
             daysSince,
+            daysSinceFirst,
+            lifetime_value: Number(c.lifetime_value || 0),
+            avgTicket,
+            frequencyPerMonth,
+            monthsActive,
             isInactive: c.ultima_compra ? new Date(c.ultima_compra) < daysAgo : false
           };
         });
         
-        // Ordenar por dias desde última compra (mais antigos primeiro)
-        clientsWithDays.sort((a: any, b: any) => (b.daysSince || 0) - (a.daysSince || 0));
+        // Filtrar clientes inativos (depois de calcular todos os campos)
+        const filtered = clientsWithDays
+          .filter((c: any) => c.isInactive)
+          .slice(0, 100); // Aumentar limite para mostrar mais clientes
         
-        const inactiveCount = clientsWithDays.filter((c: any) => c.isInactive).length;
-        const oldestPurchases = clientsWithDays.slice(0, 10);
+        // Ordenar por dias desde última compra (mais antigos primeiro)
+        filtered.sort((a: any, b: any) => (b.daysSince || 0) - (a.daysSince || 0));
+        
+        const inactiveCount = filtered.length;
+        const oldestPurchases = filtered.slice(0, 10);
         
         console.log(`[Clientes] Período: ${inactiveDays} dias`, {
           totalComClientes: data.data.length,
@@ -92,24 +121,12 @@ export default function ClientesAnalyticsPage() {
             total: c.total_compras,
             last: c.ultima_compra ? new Date(c.ultima_compra).toISOString().split('T')[0] : null,
             daysSince: c.daysSince,
-            isInactive: c.isInactive
+            isInactive: c.isInactive,
+            ltv: c.lifetime_value,
+            avgTicket: c.avgTicket,
+            frequency: c.frequencyPerMonth
           }))
         });
-        
-        // Filtrar clientes
-        const filtered = data.data
-          .filter((row: any) => {
-            if (Number(row.total_compras || 0) < 3) return false;
-            
-            // Filtrar ultima_compra > X dias atrás
-            if (row.ultima_compra) {
-              const lastPurchaseDate = new Date(row.ultima_compra);
-              const isInactive = lastPurchaseDate < daysAgo;
-              return isInactive;
-            }
-            return false;
-          })
-          .slice(0, 20);
         
         data.data = filtered;
         data.filteredCount = filtered.length;
@@ -140,12 +157,30 @@ export default function ClientesAnalyticsPage() {
     }
 
     const sorted = [...result.data].sort((a, b) => {
-      const aVal = a[sortConfig.key];
-      const bVal = b[sortConfig.key];
+      let aVal = a[sortConfig.key];
+      let bVal = b[sortConfig.key];
+      
+      // Handle date strings
+      if (sortConfig.key === 'ultima_compra' || sortConfig.key === 'primeira_compra') {
+        aVal = aVal ? new Date(aVal).getTime() : 0;
+        bVal = bVal ? new Date(bVal).getTime() : 0;
+      }
+      
+      // Handle string comparisons
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
+        const comparison = aVal.localeCompare(bVal);
+        return sortConfig.direction === 'asc' ? comparison : -comparison;
+      }
+      
+      // Handle number comparisons
       if (typeof aVal === 'number' && typeof bVal === 'number') {
         return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
       }
-      return 0;
+      
+      // Fallback: convert to number if possible
+      const aNum = Number(aVal) || 0;
+      const bNum = Number(bVal) || 0;
+      return sortConfig.direction === 'asc' ? aNum - bNum : bNum - aNum;
     });
 
     return sorted;
@@ -256,6 +291,36 @@ export default function ClientesAnalyticsPage() {
             </div>
           ) : result.data && result.data.length > 0 ? (
             <>
+              {/* Cards com métricas agregadas */}
+              {result.data.length > 0 && (
+                <div className="grid md:grid-cols-4 gap-4 mb-6">
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
+                    <div className="text-sm text-purple-700 font-medium mb-1">LTV Total</div>
+                    <div className="text-2xl font-bold text-purple-900">
+                      R$ {getSortedData().reduce((sum: number, c: any) => sum + (c.lifetime_value || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+                    <div className="text-sm text-blue-700 font-medium mb-1">LTV Médio</div>
+                    <div className="text-2xl font-bold text-blue-900">
+                      R$ {(getSortedData().reduce((sum: number, c: any) => sum + (c.lifetime_value || 0), 0) / getSortedData().length).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+                    <div className="text-sm text-green-700 font-medium mb-1">Ticket Médio</div>
+                    <div className="text-2xl font-bold text-green-900">
+                      R$ {(getSortedData().reduce((sum: number, c: any) => sum + (c.avgTicket || 0), 0) / getSortedData().length).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                  <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border border-orange-200">
+                    <div className="text-sm text-orange-700 font-medium mb-1">Freq. Média</div>
+                    <div className="text-2xl font-bold text-orange-900">
+                      {(getSortedData().reduce((sum: number, c: any) => sum + (c.frequencyPerMonth || 0), 0) / getSortedData().length).toFixed(1)}/mês
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-bold">Clientes Inativos</h3>
                 {!expandedTable && getSortedData().length > 10 && (
@@ -271,43 +336,130 @@ export default function ClientesAnalyticsPage() {
                 <table className="w-full text-sm border-collapse">
                   <thead>
                     <tr className="border-b">
-                      {Object.keys(result.data[0] || {}).map((key) => {
-                        const isSortable = isSortableColumn(key);
-                        const isSorted = sortConfig.key === key;
-                        return (
-                          <th 
-                            key={key} 
-                            className={`text-left p-3 font-semibold ${isSortable ? 'cursor-pointer hover:bg-muted select-none' : ''}`}
-                            onClick={() => isSortable && handleSort(key)}
+                      <th 
+                        className="text-left p-3 font-semibold cursor-pointer hover:bg-muted select-none"
+                        onClick={() => handleSort('customer_name')}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span>Cliente</span>
+                          {sortConfig.key === 'customer_name' && (
+                            <span className="text-xs">
+                              {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                            </span>
+                          )}
+                        </div>
+                      </th>
+                      <th 
+                        className="text-left p-3 font-semibold cursor-pointer hover:bg-muted select-none"
+                        onClick={() => handleSort('total_compras')}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span>Total Compras</span>
+                          {sortConfig.key === 'total_compras' && (
+                            <span className="text-xs">
+                              {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                            </span>
+                          )}
+                        </div>
+                      </th>
+                      <th 
+                        className="text-left p-3 font-semibold cursor-pointer hover:bg-muted select-none"
+                        onClick={() => handleSort('lifetime_value')}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span>Lifetime Value</span>
+                          {sortConfig.key === 'lifetime_value' && (
+                            <span className="text-xs">
+                              {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                            </span>
+                          )}
+                        </div>
+                      </th>
+                      <th 
+                        className="text-left p-3 font-semibold cursor-pointer hover:bg-muted select-none"
+                        onClick={() => handleSort('avgTicket')}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span>Ticket Médio</span>
+                          {sortConfig.key === 'avgTicket' && (
+                            <span className="text-xs">
+                              {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                            </span>
+                          )}
+                        </div>
+                      </th>
+                      <th 
+                        className="text-left p-3 font-semibold cursor-pointer hover:bg-muted select-none"
+                        onClick={() => handleSort('frequencyPerMonth')}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span>Freq. por Mês</span>
+                          {sortConfig.key === 'frequencyPerMonth' && (
+                            <span className="text-xs">
+                              {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                            </span>
+                          )}
+                        </div>
+                      </th>
+                      <th 
+                        className="text-left p-3 font-semibold cursor-pointer hover:bg-muted select-none"
+                        onClick={() => handleSort('ultima_compra')}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span>Última Compra</span>
+                          {sortConfig.key === 'ultima_compra' && (
+                            <span className="text-xs">
+                              {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                            </span>
+                          )}
+                        </div>
+                      </th>
+                      <th 
+                        className="text-left p-3 font-semibold cursor-pointer hover:bg-muted select-none"
+                        onClick={() => handleSort('daysSince')}
                           >
                             <div className="flex items-center gap-2">
-                              <span>{key}</span>
-                              {isSorted && (
+                          <span>Dias Inativo</span>
+                          {sortConfig.key === 'daysSince' && (
                                 <span className="text-xs">
                                   {sortConfig.direction === 'asc' ? '↑' : '↓'}
                                 </span>
                               )}
                             </div>
                           </th>
-                        );
-                      })}
                     </tr>
                   </thead>
                   <tbody>
                     {getSortedData().slice(0, expandedTable ? 1000 : 10).map((row: any, idx: number) => (
                     <tr key={idx} className="border-b hover:bg-orange-50/50 transition-colors">
-                      {Object.entries(row).map(([key, cell]: [string, any], cellIdx: number) => (
-                        <td key={cellIdx} className={`p-3 ${key === 'customer_name' ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
-                          {key === 'ultima_compra' && cell ? 
-                            new Date(cell).toLocaleDateString('pt-BR', { 
+                      <td className="p-3 font-semibold text-gray-900">{row.customer_name || `Cliente ${row.customer_id}`}</td>
+                      <td className="p-3 text-gray-700 text-right">{row.total_compras?.toLocaleString('pt-BR') || 0}</td>
+                      <td className="p-3 text-gray-700 text-right font-semibold text-green-700">
+                        R$ {(row.lifetime_value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="p-3 text-gray-700 text-right">
+                        R$ {(row.avgTicket || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="p-3 text-gray-700 text-right">
+                        {(row.frequencyPerMonth || 0).toFixed(1)}/mês
+                      </td>
+                      <td className="p-3 text-gray-700">
+                        {row.ultima_compra ? 
+                          new Date(row.ultima_compra).toLocaleDateString('pt-BR', { 
                               year: 'numeric', 
                               month: '2-digit', 
                               day: '2-digit' 
-                            }) :
-                            typeof cell === 'number' ? cell.toLocaleString('pt-BR') : 
-                            (cell || '-')}
+                          }) : '-'}
+                      </td>
+                      <td className="p-3 text-gray-700 text-right">
+                        <span className={`px-2 py-1 rounded text-sm font-medium ${
+                          (row.daysSince || 0) >= 90 ? 'bg-red-100 text-red-700' :
+                          (row.daysSince || 0) >= 60 ? 'bg-orange-100 text-orange-700' :
+                          'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          {row.daysSince || 0} dias
+                        </span>
                         </td>
-                      ))}
                     </tr>
                   ))}
                   </tbody>

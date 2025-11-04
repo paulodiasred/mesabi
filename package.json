@@ -1,0 +1,26 @@
+{
+  "name": "comidasmart",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ComidaSmart - Sistema de Analytics",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run start:dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "build": "cd backend && npm run build && cd ../frontend && npm run build",
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:backend": "cd backend && npm run start:prod",
+    "start:frontend": "cd frontend && npm run start",
+    "test": "npm run test:backend",
+    "test:backend": "cd backend && npm test",
+    "test:backend:watch": "cd backend && npm run test:watch",
+    "test:backend:cov": "cd backend && npm run test:cov",
+    "test:backend:e2e": "cd backend && npm run test:e2e",
+    "test:all": "npm run test:backend && npm run test:backend:e2e"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
+

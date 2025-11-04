@@ -22,6 +22,7 @@ export default function ItemsAnalyticsPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<QueryResult | null>(null);
   const [expandedTable, setExpandedTable] = useState(false);
+  const [chartItemsToShow, setChartItemsToShow] = useState(10);
 
   useEffect(() => {
     executeQuery();
@@ -131,23 +132,56 @@ export default function ItemsAnalyticsPage() {
             </div>
           ) : result.data && result.data.length > 0 ? (
             <div className="space-y-6">
-
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={result.data.slice(0, 15)}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="item_name"
-                    angle={-45}
-                    textAnchor="end"
-                    height={150}
-                    tick={{ fontSize: 11 }}
-                  />
-                  <YAxis tickFormatter={(value) => value.toLocaleString('pt-BR')} />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="vezes_adicionado" fill="#9333ea" name="Vezes Adicionado" />
-                </BarChart>
-              </ResponsiveContainer>
+              {/* Chart */}
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold">Top Items Mais Vendidos</h3>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-gray-600">Mostrar:</span>
+                    <select
+                      value={chartItemsToShow}
+                      onChange={(e) => setChartItemsToShow(Number(e.target.value))}
+                      className="px-3 py-1.5 border border-purple-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value={10}>Top 10</option>
+                      <option value={25}>Top 25</option>
+                      <option value={50}>Top 50</option>
+                      <option value={result.data.length}>Todos ({result.data.length})</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="overflow-x-auto -mx-4 px-4">
+                  <div style={{ minWidth: `${Math.max(800, chartItemsToShow * 60)}px` }}>
+                    <ResponsiveContainer width="100%" height={400}>
+                      <BarChart data={result.data.slice(0, chartItemsToShow).map((item: any, index: number) => ({
+                        ...item,
+                        chart_label: `#${index + 1}`,
+                        item_name_full: item.item_name || `Item ${item.item_id}`
+                      }))}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis
+                          dataKey="chart_label"
+                          tick={{ fontSize: 12 }}
+                          interval={0}
+                        />
+                        <YAxis tickFormatter={(value) => value.toLocaleString('pt-BR')} />
+                        <Tooltip 
+                          labelFormatter={(label: string, payload: any) => {
+                            return payload?.[0]?.payload?.item_name_full || label;
+                          }}
+                        />
+                        <Legend />
+                        <Bar dataKey="vezes_adicionado" fill="#9333ea" name="Vezes Adicionado" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+                {chartItemsToShow < result.data.length && (
+                  <p className="text-xs text-gray-500 mt-2 text-center">
+                    Mostrando {chartItemsToShow} de {result.data.length} items. Use o seletor acima para ver mais ou arraste o gráfico.
+                  </p>
+                )}
+              </div>
 
               <div>
                 <div className="flex justify-between items-center mb-4">
@@ -165,6 +199,7 @@ export default function ItemsAnalyticsPage() {
                   <table className="w-full border-collapse">
                     <thead>
                       <tr className="bg-gray-50">
+                        <th className="border p-3 text-center font-semibold w-16">#</th>
                         <th className="border p-3 text-left font-semibold">Item</th>
                         <th className="border p-3 text-right font-semibold">Vezes Adicionado</th>
                         <th className="border p-3 text-right font-semibold">Receita Gerada</th>
@@ -173,6 +208,7 @@ export default function ItemsAnalyticsPage() {
                     <tbody>
                       {(expandedTable ? result.data : result.data.slice(0, 10)).map((row: any, index: number) => (
                         <tr key={index} className="hover:bg-gray-50">
+                          <td className="border p-3 text-center font-semibold text-purple-600">#{index + 1}</td>
                           <td className="border p-3 font-medium">{row.item_name || `Item ${row.item_id}`}</td>
                           <td className="border p-3 text-right">{row.vezes_adicionado?.toLocaleString('pt-BR') || 0}</td>
                           <td className="border p-3 text-right">

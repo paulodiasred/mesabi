@@ -9,3 +9,4 @@ COPY generate_data.py .
 
 CMD ["python", "generate_data.py", "--months", "6"]
 
+
