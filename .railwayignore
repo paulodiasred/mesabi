@@ -1,20 +1,7 @@
-# Railway ignore file
-# Evita que Railway detecte arquivos desnecessários
-
-# Dockerfiles que não devem ser usados para deploy de serviços
+# Railway ignore - arquivos que não devem ser enviados
 Dockerfile.data-generator
 docker-compose.yml
-
-# Scripts Python
 generate_data.py
 requirements.txt
-
-# Docs
 *.md
 !README.md
-
-# Arquivos de configuração local
-.env
-.env.local
-.env*.local
-
